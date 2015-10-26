@@ -12,14 +12,12 @@ typedef QHash<QString, QSetString> GroupHashFile;
 class QStandardItemModel;
 class QSortFilterProxyModel;
 class QStringListModel;
-class QMenu;
+class QComboBox;
 #include<QModelIndexList>
 
 namespace Ui {
 class MainWindow;
 }
-
-
 
 class MainWindow : public QMainWindow
 {
@@ -30,11 +28,8 @@ public:
     ~MainWindow();
 
     void initHashFile(QString path);
-//    void actionOpen_with_File();
     void showGroupListView();
-//    void sortAscend();
-//    void show_contextmenu(const QPoint &pos);
-    void clearAllData();
+    //    void sortAscend();
     void showGroupByCurrIndex();
     void saveRes();
     void analysisJsonObject(QJsonObject jobj);
@@ -42,7 +37,9 @@ public:
     bool pathIsValid(QString path);
     void messageBoxShow(QString msg);
     bool openRectLyDirAndSave();
-    void saveStringToFile(QString writeStr, QString writePath);
+    bool saveStringToFile(QString writeStr, QString writePath);
+    void clearResData();
+    void clearGroupData();
 private:
     void initModelWithHashFile();
 
@@ -62,11 +59,15 @@ private slots:
 
     void on_groupListView_doubleClicked(const QModelIndex &index);
 
-    void on_groupListView_customContextMenuRequested(const QPoint &pos);
+    //    void on_groupListView_customContextMenuRequested(const QPoint &pos);
 
     void on_groupFileTableView_doubleClicked(const QModelIndex &index);
 
     void on_pushButton_3_clicked();
+
+    void on_saveAction_triggered();
+
+    void on_openActionMenu_triggered();
 
 private:
     Ui::MainWindow *ui;
@@ -77,15 +78,11 @@ private:
     QStandardItemModel* groupFilesModel;
     QSortFilterProxyModel* groupFilesProxyModel;
 
-
-
     QStringListModel* groupListModel;
-
     GroupHashFile     groupHashFile;
-
     QString rootPath;
-
-    QMenu *cmenu;
+    //文件过滤
+    QComboBox *filterSyntaxComboBox;
 };
 
 #endif // MAINWINDOW_H

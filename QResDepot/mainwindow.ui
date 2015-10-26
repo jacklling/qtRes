@@ -16,7 +16,7 @@
   <widget class="QWidget" name="centralWidget">
    <layout class="QVBoxLayout" name="verticalLayout_2">
     <item>
-     <layout class="QHBoxLayout" name="horizontalLayout_3">
+     <layout class="QHBoxLayout" name="filiterLayout">
       <item>
        <widget class="QLineEdit" name="filterLineEdit"/>
       </item>
@@ -181,10 +181,9 @@
      <string>文件</string>
     </property>
     <addaction name="separator"/>
+    <addaction name="openActionMenu"/>
     <addaction name="separator"/>
-    <addaction name="actionOpenFile"/>
-    <addaction name="actionSave"/>
-    <addaction name="actionOpenDir"/>
+    <addaction name="saveAction"/>
    </widget>
    <addaction name="menu"/>
   </widget>
@@ -221,24 +220,20 @@
    </attribute>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
-  <action name="actionOpenFile">
+  <action name="saveAction">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
-    <string>openFile</string>
+    <string>保存</string>
+   </property>
+   <property name="toolTip">
+    <string>保存到json</string>
    </property>
   </action>
-  <action name="actionOpen_with_File">
+  <action name="openActionMenu">
    <property name="text">
-    <string>open with File</string>
-   </property>
-  </action>
-  <action name="actionSave">
-   <property name="text">
-    <string>save</string>
-   </property>
-  </action>
-  <action name="actionOpenDir">
-   <property name="text">
-    <string>openDir</string>
+    <string>打开</string>
    </property>
   </action>
  </widget>

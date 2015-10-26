@@ -1,3 +1,6 @@
+#if _MSC_VER >= 1600
+#pragma execution_character_set("utf-8")
+#endif
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
@@ -14,8 +17,7 @@
 
 #include <QStringListModel>
 
-//读json
-//JSON
+//JSON读json
 #include <QJsonDocument>
 #include <QJsonArray>
 #include <QJsonValue>
@@ -28,23 +30,32 @@
 //
 #include <QAction>
 #include <QFileSystemModel>
+
+#include <QComboBox>
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
     rootPath = ".";
+    groupFilesModel = NULL;
+    groupListModel = NULL;
+    resFilesModel = NULL;
+
+    //    filterSyntaxComboBox = new QComboBox;
+    //    filterSyntaxComboBox->addItem(tr("png图片"), QRegExp::FixedString);
+    //    filterSyntaxComboBox->addItem(tr("所有"), QRegExp::FixedString);
+    //    filterSyntaxLabel = new QLabel(tr("Filter &syntax:"));
+    //    filterSyntaxLabel->setBuddy(filterSyntaxComboBox);
+    //    ui->filiterLayout;
     // 拖拽
     connect(ui->groupFileTableView, &GroupFileTableView::dropFinished, this, &MainWindow::onDropFinished);
-    //保存数据
-    connect(ui->actionSave, &QAction::triggered, this, &MainWindow::saveRes);
-    //打开文件夹 项目资源
-    connect(ui->actionOpenDir, &QAction::triggered, this, &MainWindow::openFile);
-
+    // 信号槽
+    //    connect(ui->actionSave, &QAction::triggered, this, &MainWindow::saveRes);
     //工具栏
-    QToolBar *fileBar = this->addToolBar("open with file");
-    fileBar->addAction(ui->actionOpenDir);
-    fileBar->addAction(ui->actionSave);
+    QToolBar *fileBar = this->addToolBar("proToolBar");
+    fileBar->addAction(ui->openActionMenu);
+    fileBar->addAction(ui->saveAction);
 
     this->groupListModel = new QStringListModel(this);
     ui->groupListView->setModel(this->groupListModel);
@@ -56,9 +67,10 @@ MainWindow::MainWindow(QWidget *parent) :
 
     this->groupFilesProxyModel = new QSortFilterProxyModel(this);
     this->groupFilesProxyModel->setSourceModel(this->groupFilesModel);
-    ui->groupFileTableView->setModel(this->groupFilesProxyModel);
-    ui->groupListView->setContextMenuPolicy(Qt::CustomContextMenu);
 
+    ui->groupFileTableView->setModel(this->groupFilesProxyModel);
+    //    ui->groupListView->setContextMenuPolicy(Qt::CustomContextMenu);
+    //    resFilesModel = NULL;
     initModelWithHashFile();
 }
 
@@ -97,15 +109,16 @@ void MainWindow::initHashFile(QString path)
         it.next();
         QFileInfo fileInfo = it.fileInfo();
         filePath = fileInfo.canonicalFilePath();
-        filePath = filePath.right(filePath.length() - path.length() - 1);
+        filePath = filePath.right(filePath.length() - path.length());
 
         baseName = fileInfo.fileName();
         int index = baseName.lastIndexOf(".");
         if (index != -1) {
             baseName = baseName.replace(index, 1, "_");
         }
+        //        //        if(baseName.indexOf(""))
+        //        baseNam
         hashFile[baseName.toUpper()] = filePath;
-        qDebug()<<"123456";
     }
     initModelWithHashFile();
 }
@@ -144,8 +157,8 @@ bool MainWindow::openRectLyDirAndSave(){
         rootPath = rootPath + "\/";
     }
     OSsetting.setValue("recentlyWorkPath", rootPath);
-    //清除所有数据
-    this->clearAllData();
+    //清除RES资源数据
+    this->clearResData();
     //初始化所有的资源
     initHashFile(rootPath);
     qDebug()<< "当前工作路径 ＝＝"<<rootPath;
@@ -162,10 +175,10 @@ void MainWindow::on_pushButton_clicked()
 {
     bool ok;
     QString text = QInputDialog::getText(this,
-                                         tr("In put a group name"),
-                                         tr("Name"),
+                                         tr("输入增加分组名称"),
+                                         tr("名称："),
                                          QLineEdit::Normal,
-                                         "test",
+                                         "group1",
                                          &ok
                                          );
     if (!ok || text.isEmpty()) {
@@ -190,6 +203,7 @@ void MainWindow::showGroupByCurrIndex()
     QString groupName = ui->groupListView->currentIndex().data().toString();
     if(groupName.isEmpty()){
         qDebug()<<"当前没有选中任何一个, 清理数据";
+        this->groupFilesModel->removeRows(0,groupFilesModel->rowCount());
         return;
     }
     QSetString& groupList = groupHashFile[groupName];
@@ -222,31 +236,27 @@ void MainWindow::onDropFinished(QHash<QString , QString> &keyPaths )
         it++;
     }
     //执行groupName touched
-    qDebug() <<"-keys ="<<keyPaths.keys() << keyPaths.values();
-    qDebug() <<"groupHashFile[groupName] ="<<groupHashFile[groupName].values();
+    //    qDebug() <<"-keys ="<<keyPaths.keys() << keyPaths.values();
+    //    qDebug() <<"groupHashFile[groupName] ="<<groupHashFile[groupName].values();
     showGroupByCurrIndex();
     return;
 }
-void MainWindow::clearAllData(){
-    qDebug()<< "清除所有的数据111";
+
+void MainWindow::clearResData(){
     hashFile.clear();
-    qDebug()<< "清除所有的数据222";
-    groupHashFile.clear();
-    qDebug()<< "清除所有的数据333";
     if(this->resFilesModel){
-        qDebug()<< "清除所有的数据333....5555";
         resFilesModel->removeRows(0, resFilesModel->rowCount());
     }
-    qDebug()<< "清除所有的数据444";
+}
+
+void MainWindow::clearGroupData(){
+    groupHashFile.clear();
     if(this->groupListModel){
         groupListModel->removeRows(0, groupListModel->rowCount());
-
     }
-    qDebug()<< "清除所有的数据555";
     if(this->groupFilesModel){
-        groupFilesModel->removeRows(0, groupFilesModel->rowCount());
+        this->groupFilesModel->removeRows(0,groupFilesModel->rowCount());
     }
-    qDebug()<< "清除所有的数据666";
 }
 //读取json文件 加载数据
 void MainWindow::analysisJsonObject(QJsonObject jobj)
@@ -309,6 +319,28 @@ void MainWindow::opFileAndShowList(QString path){
         this->messageBoxShow("当前不存在资源文件\n保存将创建新的Resources.json");
         return;
     }
+    //    QListView
+    if(groupListModel->rowCount() > 0)
+    {
+        qDebug() << "长度是：" << groupListModel->rowCount();
+
+        QMessageBox msgBox;
+        msgBox.setText("提示");
+        msgBox.setInformativeText("当前文件夹下已经有配置文件：是否重新加载当前目录");
+        msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+        msgBox.setDefaultButton(QMessageBox::Yes);
+        int ret = msgBox.exec();
+        switch (ret) {
+        case QMessageBox::Yes:
+            qDebug() << " 确定加载";
+            this->clearGroupData();
+            //list and grouptablevie
+            break;
+        default:
+            qDebug() << " 不加载";
+            return;
+        }
+    }
 
     QFile *file = new QFile(path);
     QTextStream stream(file);
@@ -357,7 +389,6 @@ void MainWindow::showGroupListView(){
 //筛选
 void MainWindow::on_filterLineEdit_textChanged(const QString &arg1)
 {
-
     resFilesProxyModel->setFilterKeyColumn(0);
     resFilesProxyModel->setFilterFixedString(ui->filterLineEdit->text().toUpper());
 }
@@ -406,7 +437,6 @@ void MainWindow::saveRes(){
     }
     QString writeStr = "{\n" + hashfilew + ",\n\n" + groupHashFilew + "\n}";
     resOutPaht = QFileDialog::getExistingDirectory(this, tr("选择保存路径"), resOutPaht, QFileDialog::ShowDirsOnly);
-
     //当前目录一样的要保存
 
     QString root = rootPath.left(rootPath.lastIndexOf('/'));
@@ -414,21 +444,27 @@ void MainWindow::saveRes(){
     root = root + "\/Resources.json";
 
     if(resOutPaht.isEmpty() || !pathIsValid(resOutPaht)){
-        saveStringToFile(writeStr, root);
-        this->messageBoxShow("无效的路径--已经保存到：\n" + root);
+        QString debugStr = "";
+        if(saveStringToFile(writeStr, root)){
+            qDebug() << "保存到默认路径成功\n" + root;
+        }else{
+            this->messageBoxShow("保存到默认路径失败");
+        }
         return;
     }
-
+    //保存到默认路径
     saveStringToFile(writeStr, root);
 
+    resOutPaht = resOutPaht + "\/";
     OSsetting.setValue("resOutPaht", resOutPaht);
-    QString outFile = resOutPaht + "\/Resources.json";
+    QString outFile = resOutPaht + "Resources.json";
+
     if(outFile != root){
-        saveStringToFile(writeStr, outFile);
+        this->messageBoxShow(saveStringToFile(writeStr, outFile) ? "保存成功" : "保存失败\n请重新保存");
     }
 }
 
-void MainWindow::saveStringToFile(QString writeStr, QString writePath)
+bool MainWindow::saveStringToFile(QString writeStr, QString writePath)
 {
     qDebug()<< "输出配置路径" << writePath;
     // 判断文件是否存在 不存在则创建
@@ -438,16 +474,18 @@ void MainWindow::saveStringToFile(QString writeStr, QString writePath)
         //创建该文件 开关一次
         outData.open(QIODevice::WriteOnly);
         outData.close();
+    }else{
+        //        this->messageBoxShow("");
+        qDebug()<< "已经存在该文件--继续输出到该文件    ";
     }
 
     if (outData.open(QFile::ReadWrite | QFile::Truncate)) {
         QTextStream out(&outData);
         out<< writeStr;
         outData.close();
-        this->messageBoxShow("保存成功");
-        return;
+        return true;
     }
-    this->messageBoxShow("保存失败");
+    return false;
 }
 // saveBtn
 void MainWindow::on_pushButton_2_clicked()
@@ -457,7 +495,6 @@ void MainWindow::on_pushButton_2_clicked()
 
 void MainWindow::on_groupListView_doubleClicked(const QModelIndex &index)
 {
-
     QMessageBox msgBox;
     msgBox.setText("删除提示");
     msgBox.setInformativeText("是否删除选中的分组");
@@ -475,26 +512,22 @@ void MainWindow::on_groupListView_doubleClicked(const QModelIndex &index)
     }
     // 删除modellist中的数据 current 是当前选中的数据
     groupHashFile.remove(ui->groupListView->currentIndex().data().toString());
-    qDebug()<< "groupHashFile = "<< groupHashFile;
+    //    qDebug()<< "groupHashFile = "<< groupHashFile;
     this->groupListModel->removeRow(ui->groupListView->currentIndex().row());
-    qDebug()<< "this->groupListModel ="<< this->groupListModel;
-}
-
-//右键菜单
-void MainWindow::on_groupListView_customContextMenuRequested(const QPoint &pos)
-{
-    qDebug() << "右键响应";
-    cmenu = new QMenu(this);
-    qDebug()<<"QCursor::pos()" << QCursor::pos();
-    cmenu->exec(QCursor::pos());//QCursor::pos()
-    QAction *ascendSortAction = cmenu->addAction("升序");
+    //    qDebug()<< "this->groupListModel ="<< this->groupListModel;
+    this->messageBoxShow("删除成功");
 }
 
 void MainWindow::on_groupFileTableView_doubleClicked(const QModelIndex &index)
 {
+
+    int row = ui->groupFileTableView->currentIndex().row();
+    QString needMove = this->groupFilesModel->index(row, 0).data().toString();
+
     QMessageBox msgBox;
     msgBox.setText("删除提示");
-    msgBox.setInformativeText("是否删除选中的分组");
+    QString tips = "是否删除组：" + ui->groupListView->currentIndex().data().toString() + "下:" + needMove;
+    msgBox.setInformativeText(tips);
     msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
     msgBox.setDefaultButton(QMessageBox::Yes);
     int ret = msgBox.exec();
@@ -505,15 +538,13 @@ void MainWindow::on_groupFileTableView_doubleClicked(const QModelIndex &index)
     default:
         qDebug() << " 不删除";
         return;
-        break;
     }
 
     //删除
-    int row = ui->groupFileTableView->currentIndex().row();
-    QString needMove = this->groupFilesModel->index(row, 0).data().toString();
     groupHashFile[ui->groupListView->currentIndex().data().toString()].remove(needMove);
     this->groupFilesModel->removeRow(ui->groupFileTableView->currentIndex().row());
 
+    this->messageBoxShow("删除成功");
 }
 //改名 copy
 void MainWindow::on_pushButton_3_clicked()
@@ -539,7 +570,7 @@ void MainWindow::on_pushButton_3_clicked()
 
     QStringList allGroupList = this->groupListModel->stringList();
     if (allGroupList.indexOf(text) != -1) {
-        qDebug()<<"已经有这个名字了，要重新取";
+        this->messageBoxShow("已经有这个名字了请重新输入");
         this->on_pushButton_3_clicked();
         return;
     }
@@ -556,5 +587,17 @@ void MainWindow::on_pushButton_3_clicked()
     this->groupListModel->insertRows(0,1);
     this->groupListModel->setData(this->groupListModel->index(0), text);
     groupHashFile[text] = needResAdd;
+    this->messageBoxShow("改名成功");
+
     showGroupByCurrIndex();
+}
+
+void MainWindow::on_saveAction_triggered()
+{
+    this->saveRes();
+}
+
+void MainWindow::on_openActionMenu_triggered()
+{
+    this->openFile();
 }
